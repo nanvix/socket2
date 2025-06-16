@@ -8,10 +8,10 @@
 
 use std::fmt;
 use std::io::{self, Read, Write};
-#[cfg(not(target_os = "redox"))]
+#[cfg(all(not(target_os = "redox"), not(target_os = "nanvix")))]
 use std::io::{IoSlice, IoSliceMut};
 use std::mem::MaybeUninit;
-#[cfg(not(target_os = "nto"))]
+#[cfg(all(not(target_os = "nto"), not(target_os = "nanvix")))]
 use std::net::Ipv6Addr;
 use std::net::{self, Ipv4Addr, Shutdown};
 #[cfg(unix)]
@@ -21,10 +21,10 @@ use std::os::windows::io::{FromRawSocket, IntoRawSocket};
 use std::time::Duration;
 
 use crate::sys::{self, c_int, getsockopt, setsockopt, Bool};
-#[cfg(all(unix, not(target_os = "redox")))]
+#[cfg(all(unix, all(not(target_os = "redox"), not(target_os = "nanvix"))))]
 use crate::MsgHdrMut;
 use crate::{Domain, Protocol, SockAddr, TcpKeepalive, Type};
-#[cfg(not(target_os = "redox"))]
+#[cfg(all(not(target_os = "redox"), not(target_os = "nanvix")))]
 use crate::{MaybeUninitSlice, MsgHdr, RecvFlags};
 
 /// Owned wrapper around a system socket.
@@ -149,8 +149,11 @@ impl Socket {
     /// This function sets the same flags as in done for [`Socket::new`],
     /// [`Socket::pair_raw`] can be used if you don't want to set those flags.
     #[doc = man_links!(unix: socketpair(2))]
-    #[cfg(all(feature = "all", unix))]
-    #[cfg_attr(docsrs, doc(cfg(all(feature = "all", unix))))]
+    #[cfg(all(feature = "all", unix, not(target_os = "nanvix")))]
+    #[cfg_attr(
+        docsrs,
+        doc(cfg(all(feature = "all", unix, not(target_os = "nanvix"))))
+    )]
     pub fn pair(
         domain: Domain,
         ty: Type,
@@ -166,8 +169,11 @@ impl Socket {
     /// Creates a pair of sockets which are connected to each other.
     ///
     /// This function corresponds to `socketpair(2)`.
-    #[cfg(all(feature = "all", unix))]
-    #[cfg_attr(docsrs, doc(cfg(all(feature = "all", unix))))]
+    #[cfg(all(feature = "all", unix, not(target_os = "nanvix")))]
+    #[cfg_attr(
+        docsrs,
+        doc(cfg(all(feature = "all", unix, not(target_os = "nanvix"))))
+    )]
     pub fn pair_raw(
         domain: Domain,
         ty: Type,
@@ -238,7 +244,7 @@ impl Socket {
         match res {
             Ok(()) => return Ok(()),
             Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {}
-            #[cfg(unix)]
+            #[cfg(all(unix, not(target_os = "nanvix")))]
             Err(ref e) if e.raw_os_error() == Some(libc::EINPROGRESS) => {}
             Err(e) => return Err(e),
         }
@@ -484,7 +490,7 @@ impl Socket {
     /// Note that the [`io::Read::read_vectored`] implementation calls this
     /// function with `buf`s of type `&mut [IoSliceMut]`, allowing initialised
     /// buffers to be used without using `unsafe`.
-    #[cfg(not(target_os = "redox"))]
+    #[cfg(all(not(target_os = "redox"), not(target_os = "nanvix")))]
     #[cfg_attr(docsrs, doc(cfg(not(target_os = "redox"))))]
     pub fn recv_vectored(
         &self,
@@ -504,7 +510,7 @@ impl Socket {
     /// as [`recv_vectored`].
     ///
     /// [`recv_vectored`]: Socket::recv_vectored
-    #[cfg(not(target_os = "redox"))]
+    #[cfg(all(not(target_os = "redox"), not(target_os = "nanvix")))]
     #[cfg_attr(docsrs, doc(cfg(not(target_os = "redox"))))]
     pub fn recv_vectored_with_flags(
         &self,
@@ -570,7 +576,7 @@ impl Socket {
     /// as [`recv_vectored`].
     ///
     /// [`recv_vectored`]: Socket::recv_vectored
-    #[cfg(not(target_os = "redox"))]
+    #[cfg(all(not(target_os = "redox"), not(target_os = "nanvix")))]
     #[cfg_attr(docsrs, doc(cfg(not(target_os = "redox"))))]
     pub fn recv_from_vectored(
         &self,
@@ -590,7 +596,7 @@ impl Socket {
     /// as [`recv_vectored`].
     ///
     /// [`recv_vectored`]: Socket::recv_vectored
-    #[cfg(not(target_os = "redox"))]
+    #[cfg(all(not(target_os = "redox"), not(target_os = "nanvix")))]
     #[cfg_attr(docsrs, doc(cfg(not(target_os = "redox"))))]
     pub fn recv_from_vectored_with_flags(
         &self,
@@ -650,7 +656,7 @@ impl Socket {
     /// <https://github.com/microsoft/Windows-classic-samples/blob/7cbd99ac1d2b4a0beffbaba29ea63d024ceff700/Samples/Win7Samples/netds/winsock/recvmsg/rmmc.cpp>
     /// for an example (in C++).
     #[doc = man_links!(recvmsg(2))]
-    #[cfg(all(unix, not(target_os = "redox")))]
+    #[cfg(all(not(target_os = "redox"), not(target_os = "nanvix")))]
     #[cfg_attr(docsrs, doc(cfg(all(unix, not(target_os = "redox")))))]
     pub fn recvmsg(&self, msg: &mut MsgHdrMut<'_, '_, '_>, flags: sys::c_int) -> io::Result<usize> {
         sys::recvmsg(self.as_raw(), msg, flags)
@@ -676,7 +682,7 @@ impl Socket {
     }
 
     /// Send data to the connected peer. Returns the amount of bytes written.
-    #[cfg(not(target_os = "redox"))]
+    #[cfg(all(not(target_os = "redox"), not(target_os = "nanvix")))]
     #[cfg_attr(docsrs, doc(cfg(not(target_os = "redox"))))]
     pub fn send_vectored(&self, bufs: &[IoSlice<'_>]) -> io::Result<usize> {
         self.send_vectored_with_flags(bufs, 0)
@@ -687,7 +693,7 @@ impl Socket {
     #[doc = man_links!(sendmsg(2))]
     ///
     /// [`send_vectored`]: Socket::send_vectored
-    #[cfg(not(target_os = "redox"))]
+    #[cfg(all(not(target_os = "redox"), not(target_os = "nanvix")))]
     #[cfg_attr(docsrs, doc(cfg(not(target_os = "redox"))))]
     pub fn send_vectored_with_flags(
         &self,
@@ -734,7 +740,7 @@ impl Socket {
     /// Send data to a peer listening on `addr`. Returns the amount of bytes
     /// written.
     #[doc = man_links!(sendmsg(2))]
-    #[cfg(not(target_os = "redox"))]
+    #[cfg(all(not(target_os = "redox"), not(target_os = "nanvix")))]
     #[cfg_attr(docsrs, doc(cfg(not(target_os = "redox"))))]
     pub fn send_to_vectored(&self, bufs: &[IoSlice<'_>], addr: &SockAddr) -> io::Result<usize> {
         self.send_to_vectored_with_flags(bufs, addr, 0)
@@ -744,7 +750,7 @@ impl Socket {
     /// arbitrary flags to the underlying `sendmsg`/`WSASendTo` call.
     ///
     /// [`send_to_vectored`]: Socket::send_to_vectored
-    #[cfg(not(target_os = "redox"))]
+    #[cfg(all(not(target_os = "redox"), not(target_os = "nanvix")))]
     #[cfg_attr(docsrs, doc(cfg(not(target_os = "redox"))))]
     pub fn send_to_vectored_with_flags(
         &self,
@@ -757,7 +763,7 @@ impl Socket {
 
     /// Send a message on a socket using a message structure.
     #[doc = man_links!(sendmsg(2))]
-    #[cfg(not(target_os = "redox"))]
+    #[cfg(all(not(target_os = "redox"), not(target_os = "nanvix")))]
     #[cfg_attr(docsrs, doc(cfg(not(target_os = "redox"))))]
     pub fn sendmsg(&self, msg: &MsgHdr<'_, '_, '_>, flags: sys::c_int) -> io::Result<usize> {
         sys::sendmsg(self.as_raw(), msg, flags)
@@ -810,6 +816,7 @@ fn set_common_flags(socket: Socket) -> io::Result<Socket> {
             target_os = "espidf",
             target_os = "vita",
             target_os = "cygwin",
+            target_os = "nanvix",
         ))
     ))]
     socket._set_cloexec(true)?;
@@ -837,6 +844,7 @@ fn set_common_flags(socket: Socket) -> io::Result<Socket> {
     target_os = "netbsd",
     target_os = "redox",
     target_os = "solaris",
+    target_os = "nanvix",
 )))]
 #[derive(Debug)]
 pub enum InterfaceIndexOrAddress {
@@ -954,7 +962,7 @@ impl Socket {
     /// For more information about this option, see [`set_out_of_band_inline`].
     ///
     /// [`set_out_of_band_inline`]: Socket::set_out_of_band_inline
-    #[cfg(not(target_os = "redox"))]
+    #[cfg(all(not(target_os = "redox"), not(target_os = "nanvix")))]
     #[cfg_attr(docsrs, doc(cfg(not(target_os = "redox"))))]
     pub fn out_of_band_inline(&self) -> io::Result<bool> {
         unsafe {
@@ -969,7 +977,7 @@ impl Socket {
     /// receive data stream. Otherwise, out-of-band data is passed only when the
     /// `MSG_OOB` flag is set during receiving. As per RFC6093, TCP sockets
     /// using the Urgent mechanism are encouraged to set this flag.
-    #[cfg(not(target_os = "redox"))]
+    #[cfg(all(not(target_os = "redox"), not(target_os = "nanvix")))]
     #[cfg_attr(docsrs, doc(cfg(not(target_os = "redox"))))]
     pub fn set_out_of_band_inline(&self, oob_inline: bool) -> io::Result<()> {
         unsafe {
@@ -1156,7 +1164,10 @@ const fn into_linger(duration: Option<Duration>) -> sys::linger {
 /// * Windows: <https://docs.microsoft.com/en-us/windows/win32/winsock/ipproto-ip-socket-options>
 impl Socket {
     /// This method is deprecated, use [`crate::Socket::header_included_v4`].
-    #[cfg(all(feature = "all", not(any(target_os = "redox", target_os = "espidf"))))]
+    #[cfg(all(
+        feature = "all",
+        not(any(target_os = "redox", target_os = "espidf", target_os = "nanvix"))
+    ))]
     #[cfg_attr(
         docsrs,
         doc(cfg(all(feature = "all", not(any(target_os = "redox", target_os = "espidf")))))
@@ -1170,10 +1181,16 @@ impl Socket {
     /// For more information about this option, see [`set_header_included`].
     ///
     /// [`set_header_included`]: Socket::set_header_included
-    #[cfg(all(feature = "all", not(any(target_os = "redox", target_os = "espidf"))))]
+    #[cfg(all(
+        feature = "all",
+        not(any(target_os = "redox", target_os = "espidf", target_os = "nanvix"))
+    ))]
     #[cfg_attr(
         docsrs,
-        doc(cfg(all(feature = "all", not(any(target_os = "redox", target_os = "espidf")))))
+        doc(cfg(all(
+            feature = "all",
+            not(any(target_os = "redox", target_os = "espidf", target_os = "nanvix"))
+        )))
     )]
     pub fn header_included_v4(&self) -> io::Result<bool> {
         unsafe {
@@ -1187,10 +1204,16 @@ impl Socket {
         any(target_os = "fuchsia", target_os = "illumos", target_os = "solaris"),
         allow(rustdoc::broken_intra_doc_links)
     )]
-    #[cfg(all(feature = "all", not(any(target_os = "redox", target_os = "espidf"))))]
+    #[cfg(all(
+        feature = "all",
+        not(any(target_os = "redox", target_os = "espidf", target_os = "nanvix"))
+    ))]
     #[cfg_attr(
         docsrs,
-        doc(cfg(all(feature = "all", not(any(target_os = "redox", target_os = "espidf")))))
+        doc(cfg(all(
+            feature = "all",
+            not(any(target_os = "redox", target_os = "espidf", target_os = "nanvix"))
+        )))
     )]
     #[deprecated = "Use `Socket::set_header_included_v4` instead"]
     pub fn set_header_included(&self, included: bool) -> io::Result<()> {
@@ -1212,10 +1235,16 @@ impl Socket {
         any(target_os = "fuchsia", target_os = "illumos", target_os = "solaris"),
         allow(rustdoc::broken_intra_doc_links)
     )]
-    #[cfg(all(feature = "all", not(any(target_os = "redox", target_os = "espidf"))))]
+    #[cfg(all(
+        feature = "all",
+        not(any(target_os = "redox", target_os = "espidf", target_os = "nanvix"))
+    ))]
     #[cfg_attr(
         docsrs,
-        doc(cfg(all(feature = "all", not(any(target_os = "redox", target_os = "espidf")))))
+        doc(cfg(all(
+            feature = "all",
+            not(any(target_os = "redox", target_os = "espidf", target_os = "nanvix"))
+        )))
     )]
     pub fn set_header_included_v4(&self, included: bool) -> io::Result<()> {
         unsafe {
@@ -1277,6 +1306,7 @@ impl Socket {
     /// address of the local interface with which the system should join the
     /// multicast group. If it's [`Ipv4Addr::UNSPECIFIED`] (`INADDR_ANY`) then
     /// an appropriate interface is chosen by the system.
+    #[cfg(not(target_os = "nanvix"))]
     pub fn join_multicast_v4(&self, multiaddr: &Ipv4Addr, interface: &Ipv4Addr) -> io::Result<()> {
         let mreq = sys::IpMreq {
             imr_multiaddr: sys::to_in_addr(multiaddr),
@@ -1290,6 +1320,7 @@ impl Socket {
     /// For more information about this option, see [`join_multicast_v4`].
     ///
     /// [`join_multicast_v4`]: Socket::join_multicast_v4
+    #[cfg(not(target_os = "nanvix"))]
     pub fn leave_multicast_v4(&self, multiaddr: &Ipv4Addr, interface: &Ipv4Addr) -> io::Result<()> {
         let mreq = sys::IpMreq {
             imr_multiaddr: sys::to_in_addr(multiaddr),
@@ -1323,6 +1354,7 @@ impl Socket {
         target_os = "espidf",
         target_os = "vita",
         target_os = "cygwin",
+        target_os = "nanvix",
     )))]
     pub fn join_multicast_v4_n(
         &self,
@@ -1357,6 +1389,7 @@ impl Socket {
         target_os = "espidf",
         target_os = "vita",
         target_os = "cygwin",
+        target_os = "nanvix",
     )))]
     pub fn leave_multicast_v4_n(
         &self,
@@ -1392,6 +1425,7 @@ impl Socket {
         target_os = "nto",
         target_os = "espidf",
         target_os = "vita",
+        target_os = "nanvix",
     )))]
     pub fn join_ssm_v4(
         &self,
@@ -1430,6 +1464,7 @@ impl Socket {
         target_os = "nto",
         target_os = "espidf",
         target_os = "vita",
+        target_os = "nanvix",
     )))]
     pub fn leave_ssm_v4(
         &self,
@@ -1604,6 +1639,7 @@ impl Socket {
         target_os = "solaris",
         target_os = "illumos",
         target_os = "haiku",
+        target_os = "nanvix",
     )))]
     pub fn set_tos(&self, tos: u32) -> io::Result<()> {
         unsafe { setsockopt(self.as_raw(), sys::IPPROTO_IP, sys::IP_TOS, tos as c_int) }
@@ -1623,6 +1659,7 @@ impl Socket {
         target_os = "solaris",
         target_os = "illumos",
         target_os = "haiku",
+        target_os = "nanvix",
     )))]
     pub fn tos(&self) -> io::Result<u32> {
         unsafe {
@@ -1650,6 +1687,7 @@ impl Socket {
         target_os = "espidf",
         target_os = "vita",
         target_os = "cygwin",
+        target_os = "nanvix",
     )))]
     pub fn set_recv_tos(&self, recv_tos: bool) -> io::Result<()> {
         unsafe {
@@ -1682,6 +1720,7 @@ impl Socket {
         target_os = "espidf",
         target_os = "vita",
         target_os = "cygwin",
+        target_os = "nanvix",
     )))]
     pub fn recv_tos(&self) -> io::Result<bool> {
         unsafe {
@@ -1710,12 +1749,16 @@ impl Socket {
             target_os = "openbsd",
             target_os = "freebsd",
             target_os = "dragonfly",
-            target_os = "netbsd"
+            target_os = "netbsd",
+            target_os = "nanvix",
         ))
     ))]
     #[cfg_attr(
         docsrs,
-        doc(cfg(all(feature = "all", not(any(target_os = "redox", target_os = "espidf")))))
+        doc(cfg(all(
+            feature = "all",
+            not(any(target_os = "redox", target_os = "espidf", target_os = "nanvix"))
+        )))
     )]
     pub fn header_included_v6(&self) -> io::Result<bool> {
         unsafe {
@@ -1744,12 +1787,16 @@ impl Socket {
             target_os = "openbsd",
             target_os = "freebsd",
             target_os = "dragonfly",
-            target_os = "netbsd"
+            target_os = "netbsd",
+            target_os = "nanvix",
         ))
     ))]
     #[cfg_attr(
         docsrs,
-        doc(cfg(all(feature = "all", not(any(target_os = "redox", target_os = "espidf")))))
+        doc(cfg(all(
+            feature = "all",
+            not(any(target_os = "redox", target_os = "espidf", target_os = "nanvix"))
+        )))
     )]
     pub fn set_header_included_v6(&self, included: bool) -> io::Result<()> {
         unsafe {
@@ -1769,7 +1816,7 @@ impl Socket {
     /// This function specifies a new multicast group for this socket to join.
     /// The address must be a valid multicast address, and `interface` is the
     /// index of the interface to join/leave (or 0 to indicate any interface).
-    #[cfg(not(target_os = "nto"))]
+    #[cfg(all(not(target_os = "nto"), not(target_os = "nanvix")))]
     pub fn join_multicast_v6(&self, multiaddr: &Ipv6Addr, interface: u32) -> io::Result<()> {
         let mreq = sys::Ipv6Mreq {
             ipv6mr_multiaddr: sys::to_in6_addr(multiaddr),
@@ -1793,7 +1840,7 @@ impl Socket {
     /// For more information about this option, see [`join_multicast_v6`].
     ///
     /// [`join_multicast_v6`]: Socket::join_multicast_v6
-    #[cfg(not(target_os = "nto"))]
+    #[cfg(all(not(target_os = "nto"), not(target_os = "nanvix")))]
     pub fn leave_multicast_v6(&self, multiaddr: &Ipv6Addr, interface: u32) -> io::Result<()> {
         let mreq = sys::Ipv6Mreq {
             ipv6mr_multiaddr: sys::to_in6_addr(multiaddr),
@@ -1815,6 +1862,7 @@ impl Socket {
     /// For more information about this option, see [`set_multicast_hops_v6`].
     ///
     /// [`set_multicast_hops_v6`]: Socket::set_multicast_hops_v6
+    #[cfg(not(target_os = "nanvix"))]
     pub fn multicast_hops_v6(&self) -> io::Result<u32> {
         unsafe {
             getsockopt::<c_int>(self.as_raw(), sys::IPPROTO_IPV6, sys::IPV6_MULTICAST_HOPS)
@@ -1827,6 +1875,7 @@ impl Socket {
     /// Indicates the number of "routers" multicast packets will transit for
     /// this socket. The default value is 1 which means that multicast packets
     /// don't leave the local network unless explicitly requested.
+    #[cfg(not(target_os = "nanvix"))]
     pub fn set_multicast_hops_v6(&self, hops: u32) -> io::Result<()> {
         unsafe {
             setsockopt(
@@ -1880,6 +1929,7 @@ impl Socket {
     /// For more information about this option, see [`set_multicast_if_v6`].
     ///
     /// [`set_multicast_if_v6`]: Socket::set_multicast_if_v6
+    #[cfg(not(target_os = "nanvix"))]
     pub fn multicast_if_v6(&self) -> io::Result<u32> {
         unsafe {
             getsockopt::<c_int>(self.as_raw(), sys::IPPROTO_IPV6, sys::IPV6_MULTICAST_IF)
@@ -1892,6 +1942,7 @@ impl Socket {
     /// Specifies the interface to use for routing multicast packets. Unlike
     /// ipv4, this is generally required in ipv6 contexts where network routing
     /// prefixes may overlap.
+    #[cfg(not(target_os = "nanvix"))]
     pub fn set_multicast_if_v6(&self, interface: u32) -> io::Result<()> {
         unsafe {
             setsockopt(
@@ -1908,6 +1959,7 @@ impl Socket {
     /// For more information about this option, see [`set_multicast_loop_v6`].
     ///
     /// [`set_multicast_loop_v6`]: Socket::set_multicast_loop_v6
+    #[cfg(not(target_os = "nanvix"))]
     pub fn multicast_loop_v6(&self) -> io::Result<bool> {
         unsafe {
             getsockopt::<c_int>(self.as_raw(), sys::IPPROTO_IPV6, sys::IPV6_MULTICAST_LOOP)
@@ -1919,6 +1971,7 @@ impl Socket {
     ///
     /// Controls whether this socket sees the multicast packets it sends itself.
     /// Note that this may not have any affect on IPv4 sockets.
+    #[cfg(not(target_os = "nanvix"))]
     pub fn set_multicast_loop_v6(&self, loop_v6: bool) -> io::Result<()> {
         unsafe {
             setsockopt(
@@ -1933,6 +1986,7 @@ impl Socket {
     /// Get the value of the `IPV6_UNICAST_HOPS` option for this socket.
     ///
     /// Specifies the hop limit for ipv6 unicast packets
+    #[cfg(not(target_os = "nanvix"))]
     pub fn unicast_hops_v6(&self) -> io::Result<u32> {
         unsafe {
             getsockopt::<c_int>(self.as_raw(), sys::IPPROTO_IPV6, sys::IPV6_UNICAST_HOPS)
@@ -1943,6 +1997,7 @@ impl Socket {
     /// Set the value for the `IPV6_UNICAST_HOPS` option on this socket.
     ///
     /// Specifies the hop limit for ipv6 unicast packets
+    #[cfg(not(target_os = "nanvix"))]
     pub fn set_unicast_hops_v6(&self, hops: u32) -> io::Result<()> {
         unsafe {
             setsockopt(
@@ -1959,6 +2014,7 @@ impl Socket {
     /// For more information about this option, see [`set_only_v6`].
     ///
     /// [`set_only_v6`]: Socket::set_only_v6
+    #[cfg(not(target_os = "nanvix"))]
     pub fn only_v6(&self) -> io::Result<bool> {
         unsafe {
             getsockopt::<c_int>(self.as_raw(), sys::IPPROTO_IPV6, sys::IPV6_V6ONLY)
@@ -1974,6 +2030,7 @@ impl Socket {
     ///
     /// If this is set to `false` then the socket can be used to send and
     /// receive packets from an IPv4-mapped IPv6 address.
+    #[cfg(not(target_os = "nanvix"))]
     pub fn set_only_v6(&self, only_v6: bool) -> io::Result<()> {
         unsafe {
             setsockopt(
@@ -2002,6 +2059,7 @@ impl Socket {
         target_os = "hurd",
         target_os = "espidf",
         target_os = "vita",
+        target_os = "nanvix",
     )))]
     pub fn recv_tclass_v6(&self) -> io::Result<bool> {
         unsafe {
@@ -2027,6 +2085,7 @@ impl Socket {
         target_os = "hurd",
         target_os = "espidf",
         target_os = "vita",
+        target_os = "nanvix",
     )))]
     pub fn set_recv_tclass_v6(&self, recv_tclass: bool) -> io::Result<()> {
         unsafe {
@@ -2060,6 +2119,7 @@ impl Socket {
             target_os = "espidf",
             target_os = "vita",
             target_os = "cygwin",
+            target_os = "nanvix",
         ))
     ))]
     pub fn recv_hoplimit_v6(&self) -> io::Result<bool> {
@@ -2089,6 +2149,7 @@ impl Socket {
             target_os = "espidf",
             target_os = "vita",
             target_os = "cygwin",
+            target_os = "nanvix",
         ))
     ))]
     pub fn set_recv_hoplimit_v6(&self, recv_hoplimit: bool) -> io::Result<()> {
@@ -2119,7 +2180,8 @@ impl Socket {
             windows,
             target_os = "haiku",
             target_os = "openbsd",
-            target_os = "vita"
+            target_os = "vita",
+            target_os = "nanvix",
         ))
     ))]
     #[cfg_attr(
@@ -2130,7 +2192,8 @@ impl Socket {
                 windows,
                 target_os = "haiku",
                 target_os = "openbsd",
-                target_os = "vita"
+                target_os = "vita",
+                target_os = "nanvix",
             ))
         )))
     )]
@@ -2362,7 +2425,7 @@ impl Read for Socket {
         self.recv(buf)
     }
 
-    #[cfg(not(target_os = "redox"))]
+    #[cfg(all(not(target_os = "redox"), not(target_os = "nanvix")))]
     fn read_vectored(&mut self, bufs: &mut [IoSliceMut<'_>]) -> io::Result<usize> {
         // Safety: both `IoSliceMut` and `MaybeUninitSlice` promise to have the
         // same layout, that of `iovec`/`WSABUF`. Furthermore, `recv_vectored`
@@ -2380,7 +2443,7 @@ impl<'a> Read for &'a Socket {
         self.recv(buf)
     }
 
-    #[cfg(not(target_os = "redox"))]
+    #[cfg(all(not(target_os = "redox"), not(target_os = "nanvix")))]
     fn read_vectored(&mut self, bufs: &mut [IoSliceMut<'_>]) -> io::Result<usize> {
         // Safety: see other `Read::read` impl.
         let bufs = unsafe { &mut *(bufs as *mut [IoSliceMut<'_>] as *mut [MaybeUninitSlice<'_>]) };
@@ -2393,7 +2456,7 @@ impl Write for Socket {
         self.send(buf)
     }
 
-    #[cfg(not(target_os = "redox"))]
+    #[cfg(all(not(target_os = "redox"), not(target_os = "nanvix")))]
     fn write_vectored(&mut self, bufs: &[IoSlice<'_>]) -> io::Result<usize> {
         self.send_vectored(bufs)
     }
@@ -2408,7 +2471,7 @@ impl<'a> Write for &'a Socket {
         self.send(buf)
     }
 
-    #[cfg(not(target_os = "redox"))]
+    #[cfg(all(not(target_os = "redox"), not(target_os = "nanvix")))]
     fn write_vectored(&mut self, bufs: &[IoSlice<'_>]) -> io::Result<usize> {
         self.send_vectored(bufs)
     }

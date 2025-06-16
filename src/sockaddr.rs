@@ -225,7 +225,7 @@ impl SockAddr {
                 ip,
                 port,
                 addr.sin6_flowinfo,
-                #[cfg(unix)]
+                #[cfg(any(target_os = "nanvix", unix))]
                 addr.sin6_scope_id,
                 #[cfg(windows)]
                 unsafe {
