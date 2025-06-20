@@ -8,7 +8,7 @@
 
 use std::fmt;
 use std::io::{self, Read, Write};
-#[cfg(not(target_os = "redox"))]
+#[cfg(not(any(target_os = "redox", target_os = "nanvix")))]
 use std::io::{IoSlice, IoSliceMut};
 use std::mem::MaybeUninit;
 #[cfg(not(target_os = "nto"))]
@@ -21,10 +21,10 @@ use std::os::windows::io::{FromRawSocket, IntoRawSocket};
 use std::time::Duration;
 
 use crate::sys::{self, c_int, getsockopt, setsockopt, Bool};
-#[cfg(all(unix, not(target_os = "redox")))]
+#[cfg(not(any(target_os = "redox", target_os = "nanvix")))]
 use crate::MsgHdrMut;
 use crate::{Domain, Protocol, SockAddr, TcpKeepalive, Type};
-#[cfg(not(target_os = "redox"))]
+#[cfg(not(any(target_os = "redox", target_os = "nanvix")))]
 use crate::{MaybeUninitSlice, MsgHdr, RecvFlags};
 
 /// Owned wrapper around a system socket.
@@ -484,8 +484,8 @@ impl Socket {
     /// Note that the [`io::Read::read_vectored`] implementation calls this
     /// function with `buf`s of type `&mut [IoSliceMut]`, allowing initialised
     /// buffers to be used without using `unsafe`.
-    #[cfg(not(target_os = "redox"))]
-    #[cfg_attr(docsrs, doc(cfg(not(target_os = "redox"))))]
+    #[cfg(not(any(target_os = "redox", target_os = "nanvix")))]
+    #[cfg_attr(docsrs, doc(cfg(not(any(target_os = "redox", target_os = "nanvix")))))]
     pub fn recv_vectored(
         &self,
         bufs: &mut [MaybeUninitSlice<'_>],
@@ -504,8 +504,8 @@ impl Socket {
     /// as [`recv_vectored`].
     ///
     /// [`recv_vectored`]: Socket::recv_vectored
-    #[cfg(not(target_os = "redox"))]
-    #[cfg_attr(docsrs, doc(cfg(not(target_os = "redox"))))]
+    #[cfg(not(any(target_os = "redox", target_os = "nanvix")))]
+    #[cfg_attr(docsrs, doc(cfg(not(amy(target_os = "redox", target_os = "nanvix")))))]
     pub fn recv_vectored_with_flags(
         &self,
         bufs: &mut [MaybeUninitSlice<'_>],
@@ -570,8 +570,8 @@ impl Socket {
     /// as [`recv_vectored`].
     ///
     /// [`recv_vectored`]: Socket::recv_vectored
-    #[cfg(not(target_os = "redox"))]
-    #[cfg_attr(docsrs, doc(cfg(not(target_os = "redox"))))]
+    #[cfg(not(any(target_os = "redox", target_os = "nanvix")))]
+    #[cfg_attr(docsrs, doc(cfg(not(amy(target_os = "redox", target_os = "nanvix")))))]
     pub fn recv_from_vectored(
         &self,
         bufs: &mut [MaybeUninitSlice<'_>],
@@ -590,8 +590,8 @@ impl Socket {
     /// as [`recv_vectored`].
     ///
     /// [`recv_vectored`]: Socket::recv_vectored
-    #[cfg(not(target_os = "redox"))]
-    #[cfg_attr(docsrs, doc(cfg(not(target_os = "redox"))))]
+    #[cfg(not(any(target_os = "redox", target_os = "nanvix")))]
+    #[cfg_attr(docsrs, doc(cfg(not(amy(target_os = "redox", target_os = "nanvix")))))]
     pub fn recv_from_vectored_with_flags(
         &self,
         bufs: &mut [MaybeUninitSlice<'_>],
@@ -650,8 +650,8 @@ impl Socket {
     /// <https://github.com/microsoft/Windows-classic-samples/blob/7cbd99ac1d2b4a0beffbaba29ea63d024ceff700/Samples/Win7Samples/netds/winsock/recvmsg/rmmc.cpp>
     /// for an example (in C++).
     #[doc = man_links!(recvmsg(2))]
-    #[cfg(all(unix, not(target_os = "redox")))]
-    #[cfg_attr(docsrs, doc(cfg(all(unix, not(target_os = "redox")))))]
+    #[cfg(not(any(target_os = "redox", target_os = "nanvix")))]
+    #[cfg_attr(docsrs, doc(cfg(not(amy(target_os = "redox", target_os = "nanvix")))))]
     pub fn recvmsg(&self, msg: &mut MsgHdrMut<'_, '_, '_>, flags: sys::c_int) -> io::Result<usize> {
         sys::recvmsg(self.as_raw(), msg, flags)
     }
@@ -676,8 +676,8 @@ impl Socket {
     }
 
     /// Send data to the connected peer. Returns the amount of bytes written.
-    #[cfg(not(target_os = "redox"))]
-    #[cfg_attr(docsrs, doc(cfg(not(target_os = "redox"))))]
+    #[cfg(not(any(target_os = "redox", target_os = "nanvix")))]
+    #[cfg_attr(docsrs, doc(cfg(not(amy(target_os = "redox", target_os = "nanvix")))))]
     pub fn send_vectored(&self, bufs: &[IoSlice<'_>]) -> io::Result<usize> {
         self.send_vectored_with_flags(bufs, 0)
     }
@@ -687,8 +687,8 @@ impl Socket {
     #[doc = man_links!(sendmsg(2))]
     ///
     /// [`send_vectored`]: Socket::send_vectored
-    #[cfg(not(target_os = "redox"))]
-    #[cfg_attr(docsrs, doc(cfg(not(target_os = "redox"))))]
+    #[cfg(not(any(target_os = "redox", target_os = "nanvix")))]
+    #[cfg_attr(docsrs, doc(cfg(not(amy(target_os = "redox", target_os = "nanvix")))))]
     pub fn send_vectored_with_flags(
         &self,
         bufs: &[IoSlice<'_>],
@@ -734,8 +734,8 @@ impl Socket {
     /// Send data to a peer listening on `addr`. Returns the amount of bytes
     /// written.
     #[doc = man_links!(sendmsg(2))]
-    #[cfg(not(target_os = "redox"))]
-    #[cfg_attr(docsrs, doc(cfg(not(target_os = "redox"))))]
+    #[cfg(not(any(target_os = "redox", target_os = "nanvix")))]
+    #[cfg_attr(docsrs, doc(cfg(not(amy(target_os = "redox", target_os = "nanvix")))))]
     pub fn send_to_vectored(&self, bufs: &[IoSlice<'_>], addr: &SockAddr) -> io::Result<usize> {
         self.send_to_vectored_with_flags(bufs, addr, 0)
     }
@@ -744,8 +744,8 @@ impl Socket {
     /// arbitrary flags to the underlying `sendmsg`/`WSASendTo` call.
     ///
     /// [`send_to_vectored`]: Socket::send_to_vectored
-    #[cfg(not(target_os = "redox"))]
-    #[cfg_attr(docsrs, doc(cfg(not(target_os = "redox"))))]
+    #[cfg(not(any(target_os = "redox", target_os = "nanvix")))]
+    #[cfg_attr(docsrs, doc(cfg(not(amy(target_os = "redox", target_os = "nanvix")))))]
     pub fn send_to_vectored_with_flags(
         &self,
         bufs: &[IoSlice<'_>],
@@ -757,8 +757,8 @@ impl Socket {
 
     /// Send a message on a socket using a message structure.
     #[doc = man_links!(sendmsg(2))]
-    #[cfg(not(target_os = "redox"))]
-    #[cfg_attr(docsrs, doc(cfg(not(target_os = "redox"))))]
+    #[cfg(not(any(target_os = "redox", target_os = "nanvix")))]
+    #[cfg_attr(docsrs, doc(cfg(not(amy(target_os = "redox", target_os = "nanvix")))))]
     pub fn sendmsg(&self, msg: &MsgHdr<'_, '_, '_>, flags: sys::c_int) -> io::Result<usize> {
         sys::sendmsg(self.as_raw(), msg, flags)
     }
@@ -954,8 +954,8 @@ impl Socket {
     /// For more information about this option, see [`set_out_of_band_inline`].
     ///
     /// [`set_out_of_band_inline`]: Socket::set_out_of_band_inline
-    #[cfg(not(target_os = "redox"))]
-    #[cfg_attr(docsrs, doc(cfg(not(target_os = "redox"))))]
+    #[cfg(not(any(target_os = "redox", target_os = "nanvix")))]
+    #[cfg_attr(docsrs, doc(cfg(not(any(target_os = "redox", target_os = "nanvix")))))]
     pub fn out_of_band_inline(&self) -> io::Result<bool> {
         unsafe {
             getsockopt::<c_int>(self.as_raw(), sys::SOL_SOCKET, sys::SO_OOBINLINE)
@@ -969,8 +969,8 @@ impl Socket {
     /// receive data stream. Otherwise, out-of-band data is passed only when the
     /// `MSG_OOB` flag is set during receiving. As per RFC6093, TCP sockets
     /// using the Urgent mechanism are encouraged to set this flag.
-    #[cfg(not(target_os = "redox"))]
-    #[cfg_attr(docsrs, doc(cfg(not(target_os = "redox"))))]
+    #[cfg(not(any(target_os = "redox", target_os = "nanvix")))]
+    #[cfg_attr(docsrs, doc(cfg(not(any(target_os = "redox", target_os = "nanvix")))))]
     pub fn set_out_of_band_inline(&self, oob_inline: bool) -> io::Result<()> {
         unsafe {
             setsockopt(
@@ -1323,6 +1323,7 @@ impl Socket {
         target_os = "espidf",
         target_os = "vita",
         target_os = "cygwin",
+        target_os = "nanvix",
     )))]
     pub fn join_multicast_v4_n(
         &self,
@@ -1357,6 +1358,7 @@ impl Socket {
         target_os = "espidf",
         target_os = "vita",
         target_os = "cygwin",
+        target_os = "nanvix",
     )))]
     pub fn leave_multicast_v4_n(
         &self,
@@ -1392,6 +1394,7 @@ impl Socket {
         target_os = "nto",
         target_os = "espidf",
         target_os = "vita",
+        target_os = "nanvix"
     )))]
     pub fn join_ssm_v4(
         &self,
@@ -1430,6 +1433,7 @@ impl Socket {
         target_os = "nto",
         target_os = "espidf",
         target_os = "vita",
+        target_os = "nanvix",
     )))]
     pub fn leave_ssm_v4(
         &self,
@@ -1650,6 +1654,7 @@ impl Socket {
         target_os = "espidf",
         target_os = "vita",
         target_os = "cygwin",
+        target_os = "nanvix"
     )))]
     pub fn set_recv_tos(&self, recv_tos: bool) -> io::Result<()> {
         unsafe {
@@ -1682,6 +1687,7 @@ impl Socket {
         target_os = "espidf",
         target_os = "vita",
         target_os = "cygwin",
+        target_os = "nanvix"
     )))]
     pub fn recv_tos(&self) -> io::Result<bool> {
         unsafe {
@@ -2002,6 +2008,7 @@ impl Socket {
         target_os = "hurd",
         target_os = "espidf",
         target_os = "vita",
+        target_os = "nanvix",
     )))]
     pub fn recv_tclass_v6(&self) -> io::Result<bool> {
         unsafe {
@@ -2027,6 +2034,7 @@ impl Socket {
         target_os = "hurd",
         target_os = "espidf",
         target_os = "vita",
+        target_os = "nanvix",
     )))]
     pub fn set_recv_tclass_v6(&self, recv_tclass: bool) -> io::Result<()> {
         unsafe {
@@ -2060,6 +2068,7 @@ impl Socket {
             target_os = "espidf",
             target_os = "vita",
             target_os = "cygwin",
+            target_os = "nanvix",
         ))
     ))]
     pub fn recv_hoplimit_v6(&self) -> io::Result<bool> {
@@ -2089,6 +2098,7 @@ impl Socket {
             target_os = "espidf",
             target_os = "vita",
             target_os = "cygwin",
+            target_os = "nanvix",
         ))
     ))]
     pub fn set_recv_hoplimit_v6(&self, recv_hoplimit: bool) -> io::Result<()> {
@@ -2119,7 +2129,8 @@ impl Socket {
             windows,
             target_os = "haiku",
             target_os = "openbsd",
-            target_os = "vita"
+            target_os = "vita",
+            target_os = "nanvix",
         ))
     ))]
     #[cfg_attr(
@@ -2130,7 +2141,8 @@ impl Socket {
                 windows,
                 target_os = "haiku",
                 target_os = "openbsd",
-                target_os = "vita"
+                target_os = "vita",
+                target_os = "nanvix",
             ))
         )))
     )]
@@ -2362,7 +2374,7 @@ impl Read for Socket {
         self.recv(buf)
     }
 
-    #[cfg(not(target_os = "redox"))]
+    #[cfg(not(any(target_os = "redox", target_os = "nanvix")))]
     fn read_vectored(&mut self, bufs: &mut [IoSliceMut<'_>]) -> io::Result<usize> {
         // Safety: both `IoSliceMut` and `MaybeUninitSlice` promise to have the
         // same layout, that of `iovec`/`WSABUF`. Furthermore, `recv_vectored`
@@ -2380,7 +2392,7 @@ impl<'a> Read for &'a Socket {
         self.recv(buf)
     }
 
-    #[cfg(not(target_os = "redox"))]
+    #[cfg(not(any(target_os = "redox", target_os = "nanvix")))]
     fn read_vectored(&mut self, bufs: &mut [IoSliceMut<'_>]) -> io::Result<usize> {
         // Safety: see other `Read::read` impl.
         let bufs = unsafe { &mut *(bufs as *mut [IoSliceMut<'_>] as *mut [MaybeUninitSlice<'_>]) };
@@ -2393,7 +2405,7 @@ impl Write for Socket {
         self.send(buf)
     }
 
-    #[cfg(not(target_os = "redox"))]
+    #[cfg(not(any(target_os = "redox", target_os = "nanvix")))]
     fn write_vectored(&mut self, bufs: &[IoSlice<'_>]) -> io::Result<usize> {
         self.send_vectored(bufs)
     }
@@ -2408,7 +2420,7 @@ impl<'a> Write for &'a Socket {
         self.send(buf)
     }
 
-    #[cfg(not(target_os = "redox"))]
+    #[cfg(not(any(target_os = "redox", target_os = "nanvix")))]
     fn write_vectored(&mut self, bufs: &[IoSlice<'_>]) -> io::Result<usize> {
         self.send_vectored(bufs)
     }
