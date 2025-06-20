@@ -8,7 +8,7 @@
 
 use std::cmp::min;
 use std::ffi::OsStr;
-#[cfg(not(target_os = "redox"))]
+#[cfg(not(any(target_os = "redox", target_os = "nanvix")))]
 use std::io::IoSlice;
 use std::marker::PhantomData;
 use std::mem::{self, size_of, MaybeUninit};
@@ -74,11 +74,10 @@ use std::{io, slice};
     target_os = "watchos",
     target_os = "cygwin",
 )))]
-use libc::ssize_t;
-use libc::{in6_addr, in_addr};
+use libc::{in6_addr, in_addr, ssize_t};
 
 use crate::{Domain, Protocol, SockAddr, TcpKeepalive, Type};
-#[cfg(not(target_os = "redox"))]
+#[cfg(not(any(target_os = "redox", target_os = "nanvix")))]
 use crate::{MsgHdr, MsgHdrMut, RecvFlags};
 
 pub(crate) use libc::c_int;
@@ -118,9 +117,9 @@ pub(crate) use libc::{
     sa_family_t, sockaddr, sockaddr_in, sockaddr_in6, sockaddr_storage, socklen_t,
 };
 // Used in `RecvFlags`.
-#[cfg(not(any(target_os = "redox", target_os = "espidf")))]
+#[cfg(not(any(target_os = "redox", target_os = "espidf", target_os = "nanvix")))]
 pub(crate) use libc::MSG_TRUNC;
-#[cfg(not(target_os = "redox"))]
+#[cfg(not(any(target_os = "redox", target_os = "nanvix")))]
 pub(crate) use libc::SO_OOBINLINE;
 // Used in `Socket`.
 #[cfg(not(target_os = "nto"))]
@@ -140,6 +139,7 @@ pub(crate) use libc::ipv6_mreq as Ipv6Mreq;
         target_os = "espidf",
         target_os = "vita",
         target_os = "cygwin",
+        target_os = "nanvix",
     ))
 ))]
 pub(crate) use libc::IPV6_RECVHOPLIMIT;
@@ -155,6 +155,7 @@ pub(crate) use libc::IPV6_RECVHOPLIMIT;
     target_os = "haiku",
     target_os = "espidf",
     target_os = "vita",
+    target_os = "nanvix",
 )))]
 pub(crate) use libc::IPV6_RECVTCLASS;
 #[cfg(all(feature = "all", not(any(target_os = "redox", target_os = "espidf"))))]
@@ -174,6 +175,7 @@ pub(crate) use libc::IP_HDRINCL;
     target_os = "espidf",
     target_os = "vita",
     target_os = "cygwin",
+    target_os = "nanvix",
 )))]
 pub(crate) use libc::IP_RECVTOS;
 #[cfg(not(any(
@@ -220,6 +222,7 @@ pub(crate) use libc::{
     target_os = "nto",
     target_os = "espidf",
     target_os = "vita",
+    target_os = "nanvix",
 )))]
 pub(crate) use libc::{
     ip_mreq_source as IpMreqSource, IP_ADD_SOURCE_MEMBERSHIP, IP_DROP_SOURCE_MEMBERSHIP,
@@ -299,10 +302,12 @@ use libc::TCP_KEEPALIVE as KEEPALIVE_TIME;
     target_os = "tvos",
     target_os = "watchos",
     target_os = "vita",
+    target_os = "nanvix",
 )))]
 use libc::TCP_KEEPIDLE as KEEPALIVE_TIME;
 
 /// Helper macro to execute a system call that returns an `io::Result`.
+// #[cfg(not(target_os = "nanvix"))]
 macro_rules! syscall {
     ($fn: ident ( $($arg: expr),* $(,)* ) ) => {{
         #[allow(unused_unsafe)]
@@ -538,7 +543,12 @@ impl_debug!(
     libc::SOCK_DCCP,
     #[cfg(not(any(target_os = "redox", target_os = "espidf")))]
     libc::SOCK_RAW,
-    #[cfg(not(any(target_os = "redox", target_os = "haiku", target_os = "espidf")))]
+    #[cfg(not(any(
+        target_os = "redox",
+        target_os = "haiku",
+        target_os = "espidf",
+        target_os = "nanvix"
+    )))]
     libc::SOCK_RDM,
     #[cfg(not(target_os = "espidf"))]
     libc::SOCK_SEQPACKET,
@@ -593,7 +603,7 @@ impl_debug!(
 );
 
 /// Unix-only API.
-#[cfg(not(target_os = "redox"))]
+#[cfg(not(any(target_os = "redox", target_os = "nanvix")))]
 impl RecvFlags {
     /// Check if the message terminates a record.
     ///
@@ -657,7 +667,7 @@ impl RecvFlags {
     }
 }
 
-#[cfg(not(target_os = "redox"))]
+#[cfg(not(any(target_os = "redox", target_os = "nanvix")))]
 impl std::fmt::Debug for RecvFlags {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut s = f.debug_struct("RecvFlags");
@@ -699,11 +709,11 @@ impl<'a> MaybeUninitSlice<'a> {
     }
 
     pub(crate) fn as_slice(&self) -> &[MaybeUninit<u8>] {
-        unsafe { slice::from_raw_parts(self.vec.iov_base.cast(), self.vec.iov_len) }
+        unsafe { slice::from_raw_parts(self.vec.iov_base.cast(), self.vec.iov_len as usize) }
     }
 
     pub(crate) fn as_mut_slice(&mut self) -> &mut [MaybeUninit<u8>] {
-        unsafe { slice::from_raw_parts_mut(self.vec.iov_base.cast(), self.vec.iov_len) }
+        unsafe { slice::from_raw_parts_mut(self.vec.iov_base.cast(), self.vec.iov_len as usize) }
     }
 }
 
@@ -760,39 +770,39 @@ pub(crate) fn unix_sockaddr(path: &Path) -> io::Result<SockAddr> {
 }
 
 // Used in `MsgHdr`.
-#[cfg(not(target_os = "redox"))]
+#[cfg(not(any(target_os = "redox", target_os = "nanvix")))]
 pub(crate) use libc::msghdr;
 
-#[cfg(not(target_os = "redox"))]
+#[cfg(not(any(target_os = "redox", target_os = "nanvix")))]
 pub(crate) fn set_msghdr_name(msg: &mut msghdr, name: &SockAddr) {
     msg.msg_name = name.as_ptr() as *mut _;
     msg.msg_namelen = name.len();
 }
 
-#[cfg(not(target_os = "redox"))]
+#[cfg(not(any(target_os = "redox", target_os = "nanvix")))]
 #[allow(clippy::unnecessary_cast)] // IovLen type can be `usize`.
 pub(crate) fn set_msghdr_iov(msg: &mut msghdr, ptr: *mut libc::iovec, len: usize) {
     msg.msg_iov = ptr;
     msg.msg_iovlen = min(len, IovLen::MAX as usize) as IovLen;
 }
 
-#[cfg(not(target_os = "redox"))]
+#[cfg(not(any(target_os = "redox", target_os = "nanvix")))]
 pub(crate) fn set_msghdr_control(msg: &mut msghdr, ptr: *mut libc::c_void, len: usize) {
     msg.msg_control = ptr;
     msg.msg_controllen = len as _;
 }
 
-#[cfg(not(target_os = "redox"))]
+#[cfg(not(any(target_os = "redox", target_os = "nanvix")))]
 pub(crate) fn set_msghdr_flags(msg: &mut msghdr, flags: libc::c_int) {
     msg.msg_flags = flags;
 }
 
-#[cfg(not(target_os = "redox"))]
+#[cfg(not(any(target_os = "redox", target_os = "nanvix")))]
 pub(crate) fn msghdr_flags(msg: &msghdr) -> RecvFlags {
     RecvFlags(msg.msg_flags)
 }
 
-#[cfg(not(target_os = "redox"))]
+#[cfg(not(any(target_os = "redox", target_os = "nanvix")))]
 pub(crate) fn msghdr_control_len(msg: &msghdr) -> usize {
     msg.msg_controllen as _
 }
@@ -1083,7 +1093,7 @@ pub(crate) fn recv(fd: Socket, buf: &mut [MaybeUninit<u8>], flags: c_int) -> io:
     syscall!(recv(
         fd,
         buf.as_mut_ptr().cast(),
-        min(buf.len(), MAX_BUF_LEN),
+        min(buf.len(), MAX_BUF_LEN) as libc::size_t,
         flags,
     ))
     .map(|n| n as usize)
@@ -1100,7 +1110,7 @@ pub(crate) fn recv_from(
             syscall!(recvfrom(
                 fd,
                 buf.as_mut_ptr().cast(),
-                min(buf.len(), MAX_BUF_LEN),
+                min(buf.len(), MAX_BUF_LEN) as libc::size_t,
                 flags,
                 addr.cast(),
                 addrlen
@@ -1119,7 +1129,7 @@ pub(crate) fn peek_sender(fd: Socket) -> io::Result<SockAddr> {
     Ok(sender)
 }
 
-#[cfg(not(target_os = "redox"))]
+#[cfg(not(any(target_os = "redox", target_os = "nanvix")))]
 pub(crate) fn recv_vectored(
     fd: Socket,
     bufs: &mut [crate::MaybeUninitSlice<'_>],
@@ -1130,7 +1140,7 @@ pub(crate) fn recv_vectored(
     Ok((n, msg.flags()))
 }
 
-#[cfg(not(target_os = "redox"))]
+#[cfg(not(any(target_os = "redox", target_os = "nanvix")))]
 pub(crate) fn recv_from_vectored(
     fd: Socket,
     bufs: &mut [crate::MaybeUninitSlice<'_>],
@@ -1152,7 +1162,7 @@ pub(crate) fn recv_from_vectored(
     Ok((n, msg.flags(), addr))
 }
 
-#[cfg(not(target_os = "redox"))]
+#[cfg(not(any(target_os = "redox", target_os = "nanvix")))]
 pub(crate) fn recvmsg(
     fd: Socket,
     msg: &mut MsgHdrMut<'_, '_, '_>,
@@ -1165,13 +1175,13 @@ pub(crate) fn send(fd: Socket, buf: &[u8], flags: c_int) -> io::Result<usize> {
     syscall!(send(
         fd,
         buf.as_ptr().cast(),
-        min(buf.len(), MAX_BUF_LEN),
+        min(buf.len(), MAX_BUF_LEN) as libc::size_t,
         flags,
     ))
     .map(|n| n as usize)
 }
 
-#[cfg(not(target_os = "redox"))]
+#[cfg(not(any(target_os = "redox", target_os = "nanvix")))]
 pub(crate) fn send_vectored(fd: Socket, bufs: &[IoSlice<'_>], flags: c_int) -> io::Result<usize> {
     let msg = MsgHdr::new().with_buffers(bufs);
     sendmsg(fd, &msg, flags)
@@ -1181,7 +1191,7 @@ pub(crate) fn send_to(fd: Socket, buf: &[u8], addr: &SockAddr, flags: c_int) -> 
     syscall!(sendto(
         fd,
         buf.as_ptr().cast(),
-        min(buf.len(), MAX_BUF_LEN),
+        min(buf.len(), MAX_BUF_LEN) as libc::size_t,
         flags,
         addr.as_ptr(),
         addr.len(),
@@ -1189,7 +1199,7 @@ pub(crate) fn send_to(fd: Socket, buf: &[u8], addr: &SockAddr, flags: c_int) -> 
     .map(|n| n as usize)
 }
 
-#[cfg(not(target_os = "redox"))]
+#[cfg(not(any(target_os = "redox", target_os = "nanvix")))]
 pub(crate) fn send_to_vectored(
     fd: Socket,
     bufs: &[IoSlice<'_>],
@@ -1200,7 +1210,7 @@ pub(crate) fn send_to_vectored(
     sendmsg(fd, &msg, flags)
 }
 
-#[cfg(not(target_os = "redox"))]
+#[cfg(not(any(target_os = "redox", target_os = "nanvix")))]
 pub(crate) fn sendmsg(fd: Socket, msg: &MsgHdr<'_, '_, '_>, flags: c_int) -> io::Result<usize> {
     syscall!(sendmsg(fd, &msg.inner, flags)).map(|n| n as usize)
 }
@@ -1248,13 +1258,23 @@ fn into_timeval(duration: Option<Duration>) -> libc::timeval {
 
 #[cfg(all(
     feature = "all",
-    not(any(target_os = "haiku", target_os = "openbsd", target_os = "vita"))
+    not(any(
+        target_os = "haiku",
+        target_os = "openbsd",
+        target_os = "vita",
+        target_os = "nanvix"
+    ))
 ))]
 #[cfg_attr(
     docsrs,
     doc(cfg(all(
         feature = "all",
-        not(any(target_os = "haiku", target_os = "openbsd", target_os = "vita"))
+        not(any(
+            target_os = "haiku",
+            target_os = "openbsd",
+            target_os = "vita",
+            target_os = "nanvix"
+        ))
     )))
 )]
 pub(crate) fn keepalive_time(fd: Socket) -> io::Result<Duration> {
@@ -1270,7 +1290,8 @@ pub(crate) fn set_tcp_keepalive(fd: Socket, keepalive: &TcpKeepalive) -> io::Res
         target_os = "haiku",
         target_os = "openbsd",
         target_os = "nto",
-        target_os = "vita"
+        target_os = "vita",
+        target_os = "nanvix",
     )))]
     if let Some(time) = keepalive.time {
         let secs = into_secs(time);
@@ -1293,6 +1314,7 @@ pub(crate) fn set_tcp_keepalive(fd: Socket, keepalive: &TcpKeepalive) -> io::Res
         target_os = "tvos",
         target_os = "watchos",
         target_os = "cygwin",
+        target_os = "nanvix",
     ))]
     {
         if let Some(interval) = keepalive.interval {
@@ -1427,6 +1449,7 @@ pub(crate) fn from_in6_addr(addr: in6_addr) -> Ipv6Addr {
     target_os = "espidf",
     target_os = "vita",
     target_os = "cygwin",
+    target_os = "nanvix",
 )))]
 pub(crate) const fn to_mreqn(
     multiaddr: &Ipv4Addr,
@@ -1668,8 +1691,15 @@ impl crate::Socket {
     /// For more information about this option, see [`set_mss`].
     ///
     /// [`set_mss`]: crate::Socket::set_mss
-    #[cfg(all(feature = "all", not(target_os = "redox")))]
-    #[cfg_attr(docsrs, doc(cfg(all(feature = "all", unix, not(target_os = "redox")))))]
+    #[cfg(all(feature = "all", not(any(target_os = "redox", target_os = "nanvix"))))]
+    #[cfg_attr(
+        docsrs,
+        doc(cfg(all(
+            feature = "all",
+            unix,
+            not(any(target_os = "redox", target_os = "nanvix"))
+        )))
+    )]
     pub fn mss(&self) -> io::Result<u32> {
         unsafe {
             getsockopt::<c_int>(self.as_raw(), libc::IPPROTO_TCP, libc::TCP_MAXSEG)
@@ -1681,8 +1711,15 @@ impl crate::Socket {
     ///
     /// The `TCP_MAXSEG` option denotes the TCP Maximum Segment Size and is only
     /// available on TCP sockets.
-    #[cfg(all(feature = "all", not(target_os = "redox")))]
-    #[cfg_attr(docsrs, doc(cfg(all(feature = "all", unix, not(target_os = "redox")))))]
+    #[cfg(all(feature = "all", not(any(target_os = "redox", target_os = "nanvix"))))]
+    #[cfg_attr(
+        docsrs,
+        doc(cfg(all(
+            feature = "all",
+            unix,
+            not(any(target_os = "redox", target_os = "nanvix"))
+        )))
+    )]
     pub fn set_mss(&self, mss: u32) -> io::Result<()> {
         unsafe {
             setsockopt(
@@ -2348,14 +2385,24 @@ impl crate::Socket {
     /// [`set_reuse_port`]: crate::Socket::set_reuse_port
     #[cfg(all(
         feature = "all",
-        not(any(target_os = "solaris", target_os = "illumos", target_os = "cygwin"))
+        not(any(
+            target_os = "solaris",
+            target_os = "illumos",
+            target_os = "cygwin",
+            target_os = "nanvix"
+        ))
     ))]
     #[cfg_attr(
         docsrs,
         doc(cfg(all(
             feature = "all",
             unix,
-            not(any(target_os = "solaris", target_os = "illumos", target_os = "cygwin"))
+            not(any(
+                target_os = "solaris",
+                target_os = "illumos",
+                target_os = "cygwin",
+                target_os = "nanvix"
+            ))
         )))
     )]
     pub fn reuse_port(&self) -> io::Result<bool> {
@@ -2372,14 +2419,24 @@ impl crate::Socket {
     /// there's a socket already listening on this port.
     #[cfg(all(
         feature = "all",
-        not(any(target_os = "solaris", target_os = "illumos", target_os = "cygwin"))
+        not(any(
+            target_os = "solaris",
+            target_os = "illumos",
+            target_os = "cygwin",
+            target_os = "nanvix"
+        ))
     ))]
     #[cfg_attr(
         docsrs,
         doc(cfg(all(
             feature = "all",
             unix,
-            not(any(target_os = "solaris", target_os = "illumos", target_os = "cygwin"))
+            not(any(
+                target_os = "solaris",
+                target_os = "illumos",
+                target_os = "cygwin",
+                target_os = "nanvix"
+            ))
         )))
     )]
     pub fn set_reuse_port(&self, reuse: bool) -> io::Result<()> {
