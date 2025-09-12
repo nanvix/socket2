@@ -66,7 +66,7 @@ impl<'a> MaybeUninitSlice<'a> {
         MaybeUninitSlice {
             vec: iovec {
                 iov_base: buf.as_mut_ptr().cast(),
-                iov_len: buf.len() as u32,
+                iov_len: buf.len(),
             },
             _lifetime: PhantomData,
         }
