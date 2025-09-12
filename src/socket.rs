@@ -150,7 +150,7 @@ impl Socket {
     /// This function sets the same flags as in done for [`Socket::new`],
     /// [`Socket::pair_raw`] can be used if you don't want to set those flags.
     #[doc = man_links!(unix: socketpair(2))]
-    #[cfg(all(feature = "all", unix))]
+    #[cfg(all(feature = "all", unix, not(target_os = "nanvix")))]
     pub fn pair(
         domain: Domain,
         ty: Type,
@@ -166,7 +166,7 @@ impl Socket {
     /// Creates a pair of sockets which are connected to each other.
     ///
     /// This function corresponds to `socketpair(2)`.
-    #[cfg(all(feature = "all", unix))]
+    #[cfg(all(feature = "all", unix, not(target_os = "nanvix")))]
     pub fn pair_raw(
         domain: Domain,
         ty: Type,
@@ -381,7 +381,7 @@ impl Socket {
     /// `O_NONBLOCK`.
     ///
     /// On Windows it is not possible retrieve the nonblocking mode status.
-    #[cfg(all(feature = "all", unix))]
+    #[cfg(all(feature = "all", unix, not(target_os = "nanvix")))]
     pub fn nonblocking(&self) -> io::Result<bool> {
         sys::nonblocking(self.as_raw())
     }
@@ -1181,7 +1181,7 @@ impl Socket {
     /// For more information about this option, see [`set_header_included_v4`].
     ///
     /// [`set_header_included_v4`]: Socket::set_header_included_v4
-    #[cfg(all(feature = "all", not(any(target_os = "redox", target_os = "espidf"))))]
+    #[cfg(all(feature = "all", not(any(target_os = "redox", target_os = "espidf", target_os = "nanvix"))))]
     pub fn header_included_v4(&self) -> io::Result<bool> {
         unsafe {
             getsockopt::<c_int>(self.as_raw(), sys::IPPROTO_IP, sys::IP_HDRINCL)
@@ -1204,7 +1204,7 @@ impl Socket {
         any(target_os = "fuchsia", target_os = "illumos", target_os = "solaris"),
         allow(rustdoc::broken_intra_doc_links)
     )]
-    #[cfg(all(feature = "all", not(any(target_os = "redox", target_os = "espidf"))))]
+    #[cfg(all(feature = "all", not(any(target_os = "redox", target_os = "espidf", target_os = "nanvix"))))]
     pub fn set_header_included_v4(&self, included: bool) -> io::Result<()> {
         unsafe {
             setsockopt(
@@ -1704,7 +1704,8 @@ impl Socket {
             target_os = "openbsd",
             target_os = "freebsd",
             target_os = "dragonfly",
-            target_os = "netbsd"
+            target_os = "netbsd",
+            target_os = "nanvix",
         ))
     ))]
     pub fn header_included_v6(&self) -> io::Result<bool> {
@@ -1734,7 +1735,8 @@ impl Socket {
             target_os = "openbsd",
             target_os = "freebsd",
             target_os = "dragonfly",
-            target_os = "netbsd"
+            target_os = "netbsd",
+            target_os = "nanvix",
         ))
     ))]
     pub fn set_header_included_v6(&self, included: bool) -> io::Result<()> {
@@ -2059,6 +2061,7 @@ impl Socket {
             target_os = "espidf",
             target_os = "vita",
             target_os = "cygwin",
+            target_os = "nanvix"
         ))
     ))]
     pub fn recv_hoplimit_v6(&self) -> io::Result<bool> {
@@ -2088,6 +2091,7 @@ impl Socket {
             target_os = "espidf",
             target_os = "vita",
             target_os = "cygwin",
+            target_os = "nanvix",
         ))
     ))]
     pub fn set_recv_hoplimit_v6(&self, recv_hoplimit: bool) -> io::Result<()> {
@@ -2118,7 +2122,8 @@ impl Socket {
             windows,
             target_os = "haiku",
             target_os = "openbsd",
-            target_os = "vita"
+            target_os = "vita",
+            target_os = "nanvix"
         ))
     ))]
     pub fn keepalive_time(&self) -> io::Result<Duration> {
