@@ -1,0 +1,39 @@
+# Builds and tests for Nanvix.
+
+name: Nanvix CI
+
+on:
+  # Nightly run ensures long-lived branches do not drift from defaults.
+  schedule:
+    - cron: "0 0 * * *"
+  # Automatically re-sync whenever nanvix/* branches receive direct pushes.
+  push:
+    branches:
+      - 'nanvix/**'
+  # Automatically run CI on PRs targeting nanvix/* branches.
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches:
+      - 'nanvix/**'
+  # Manual trigger allows running the CI on-demand.
+  workflow_dispatch:
+  # Trigger CI on major releases to catch any upstream issues.
+  repository_dispatch:
+    types: [nanvix-major-release]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: nanvix-ci-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    uses: nanvix/workflows/.github/workflows/build-rust.yml@main
+    with:
+      rust_toolchain: nanvix-x86
+      additional_targets: '["x86_64-unknown-linux-gnu"]'
+      report_failure: ${{ github.event_name == 'repository_dispatch' && github.event.action == 'nanvix-major-release' }}
+      failure_issue_assignees: '["ppenna"]'
