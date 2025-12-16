@@ -59,9 +59,6 @@
 #![doc(test(attr(deny(warnings))))]
 #![cfg_attr(target_os = "nanvix", feature(rustc_private))]
 
-#[cfg(target_os = "nanvix")]
-extern crate sysapi;
-
 use std::fmt;
 #[cfg(not(any(target_os = "redox", target_os = "nanvix")))]
 use std::io::IoSlice;
