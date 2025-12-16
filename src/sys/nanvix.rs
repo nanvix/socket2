@@ -34,7 +34,6 @@ pub use ::std::os::nanvix::syscall::sys::socket::family::AF_INET6;
 pub use ::std::os::nanvix::syscall::sys::socket::family::AF_UNIX;
 pub use ::std::os::nanvix::syscall::sys::socket::linger;
 pub use ::std::os::nanvix::syscall::sys::socket::sa_family_t;
-pub use ::std::os::nanvix::syscall::sys::socket::sockaddr;
 pub use ::std::os::nanvix::syscall::sys::socket::sockaddr_storage;
 pub use ::std::os::nanvix::syscall::sys::socket::socklen_t;
 pub use ::std::os::nanvix::syscall::sys::socket::MSG_OOB;
@@ -53,6 +52,7 @@ pub use ::std::os::nanvix::syscall::sys::socket::SO_SNDBUF;
 pub use ::std::os::nanvix::syscall::sys::socket::SO_SNDTIMEO;
 pub use ::std::os::nanvix::syscall::sys::socket::SO_TYPE;
 pub use ::std::os::nanvix::syscall::sys::uio::iovec;
+pub use ::sysapi::sys_socket::sockaddr;
 
 pub(crate) type Bool = c_int;
 
@@ -67,7 +67,7 @@ impl<'a> MaybeUninitSlice<'a> {
         MaybeUninitSlice {
             vec: iovec {
                 iov_base: buf.as_mut_ptr().cast(),
-                iov_len: buf.len() as u32,
+                iov_len: buf.len(),
             },
             _lifetime: PhantomData,
         }
